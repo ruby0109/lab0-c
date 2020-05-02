@@ -88,10 +88,21 @@ int q_size(queue_t *q);
 void q_reverse(queue_t *q);
 
 /*
+ * Split queue q into left queue and right queue.
+ */
+void split_q(queue_t *q, queue_t *left_q, queue_t *right_q);
+
+/*
+ * Merge right queue to left queue by nature sort compare.
+ */
+void merge_q(queue_t *left_q, queue_t *right_q);
+
+/*
+ * Do recursive merge sort on q.
  * Sort elements of queue in ascending order
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-void q_sort(queue_t *q);
+queue_t *q_sort(queue_t *q);
 
 #endif /* LAB0_QUEUE_H */

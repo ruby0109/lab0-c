@@ -547,11 +547,11 @@ bool do_sort(int argc, char *argv[])
         report(3, "Warning: Calling sort on single node");
     error_check();
 
-    set_noallocate_mode(true);
+    // set_noallocate_mode(true);
     if (exception_setup(true))
-        q_sort(q);
-    exception_cancel();
-    set_noallocate_mode(false);
+        q = q_sort(q);
+    // exception_cancel();
+    // set_noallocate_mode(false);
 
     bool ok = true;
     if (q) {

@@ -4,6 +4,7 @@
 
 #include "harness.h"
 #include "queue.h"
+#include "strnatcmp.h"
 
 /*
  * Create empty queue.
@@ -33,8 +34,8 @@ void q_free(queue_t *q)
         printf("Can not free, it's NULL pointer!\n");
         return;
     }
-    // In other situation, free value, save next pointer then free the list
-    // element
+    /* In other situation, free value, save next pointer then free the list
+     * element. */
     list_ele_t *ptr;
     ptr = q->head;  // from beginning
     while (ptr != NULL) {
@@ -58,6 +59,7 @@ bool q_insert_head(queue_t *q, char *s)
 {
     long int len = strlen(s) + 1;
     list_ele_t *newh;
+
     if (q == NULL) {
         printf("Could not insert element, it's NULL pointer!\n");
         return false;
@@ -77,8 +79,8 @@ bool q_insert_head(queue_t *q, char *s)
     memcpy(newh->value, s, len);
     newh->next = q->head;
     q->head = newh;
-    // If it's the first element, then this element is both the head and also
-    // the tail
+    /* If it's the first element, then this element is both the head and also
+     * the tail */
     if (q->size == 0)
         q->tail = newh;
     q->size++;
@@ -96,6 +98,7 @@ bool q_insert_tail(queue_t *q, char *s)
 {
     long int len = strlen(s) + 1;
     list_ele_t *newt;
+
     if (q == NULL) {
         printf("Could not insert element, it's NULL pointer!\n");
         return false;
@@ -114,7 +117,6 @@ bool q_insert_tail(queue_t *q, char *s)
     }
     memcpy(newt->value, s, len);
     newt->next = NULL;
-    // Check whether there was element in the queue or not
     if (q->size != 0)
         q->tail->next = newt;
     else
@@ -157,6 +159,7 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
         }
     }
     q->head = ele->next;
+    q->size = q->size - 1;
     /* Free the element and the string value of it.*/
     free(ele->value);
     free(ele);
@@ -205,13 +208,99 @@ void q_reverse(queue_t *q)
     tmp->next = NULL;
 }
 
+/* Below functions are all for sorting */
 /*
- * Sort elements of queue in ascending order
- * No effect if q is NULL or empty. In addition, if q has only one
- * element, do nothing.
+ * Split queue q into left queue and right queue.
  */
-void q_sort(queue_t *q)
+void split_q(queue_t *q, queue_t *left_q, queue_t *right_q)
 {
-    /* TODO: You need to write the code for this function */
-    /* TODO: Remove the above comment when you are about to implement. */
+    int size = q->size;
+    int leftSize = size / 2;
+    list_ele_t *tmp = q->head;
+    /* The head of q is the head of left queue. */
+    left_q->head = tmp;
+    left_q->size = leftSize;
+    /* Till the tail of left queue. */
+    for (int i = 0; i < leftSize - 1; i++) {
+        tmp = tmp->next;
+    }
+    left_q->tail = tmp;
+    /* Then the next element is the head of right queue */
+    tmp = tmp->next;
+    left_q->tail->next = NULL;
+    right_q->head = tmp;
+    /* The tail of q is the tail of right queue */
+    right_q->tail = q->tail;
+    right_q->size = size - leftSize;
+}
+
+/*
+ * Merge right queue to left queue by nature sort compare.
+ */
+void merge_q(queue_t *left_q, queue_t *right_q)
+{
+    int cnt = 0;
+    int size = left_q->size + right_q->size;
+    list_ele_t *left_l, *right_l, *tmp;
+
+    left_l = left_q->head;
+    right_l = right_q->head;
+
+    /* First element */
+    if (right_l == NULL ||
+        (left_l != NULL && strnatcmp(left_l->value, right_l->value) < 0)) {
+        tmp = left_l;
+        left_l = left_l->next;
+        cnt++;
+    } else {
+        tmp = right_l;
+        right_l = right_l->next;
+        cnt++;
+    }
+    left_q->head = tmp;
+
+    while (cnt < size) {
+        if (right_l == NULL ||
+            (left_l != NULL && strnatcmp(left_l->value, right_l->value) < 0)) {
+            tmp->next = left_l;
+            left_l = left_l->next;
+        } else {
+            tmp->next = right_l;
+            right_l = right_l->next;
+        }
+        cnt++;
+        tmp = tmp->next;
+    }
+    tmp->next = NULL;
+    left_q->size = size;
+    left_q->tail = tmp;
+    free(right_q);
+}
+
+/*
+ * Merge sort and nature sort
+ * Sort elements of queue in ascending order
+ * No effect if q is NULL or empty.
+ * In addition, if q has only one element, do nothing.
+ */
+queue_t *q_sort(queue_t *q)
+{
+    queue_t *left_q, *right_q;
+
+    if (q == NULL || q->size <= 1)
+        return q;
+    left_q = malloc(sizeof(queue_t));
+    right_q = malloc(sizeof(queue_t));
+    if (left_q == NULL || right_q == NULL) {
+        printf("Couldn't allocate memory for splited queues!\n");
+        return q;
+    }
+    /* Use resursion split the queue to each element. */
+    split_q(q, left_q, right_q);
+    left_q = q_sort(left_q);
+    right_q = q_sort(right_q);
+    /* Then merge each element. */
+    merge_q(left_q, right_q);
+    free(q);
+    return (queue_t *) left_q;
 }
